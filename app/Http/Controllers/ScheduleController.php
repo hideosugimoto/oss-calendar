@@ -79,27 +79,31 @@ class ScheduleController extends Controller
                 return 0;
             }
         }
+        $isEventAllowed  = 1;// 0:非公開、1：公開、2:予定あり
         foreach ($attendees as $key => $attendee){
             //自分自身の予定データか？ または自分自身がオーナーか？
             if($attendee->user_id == $my->id || $schedule->calendarlist_id == $my->calendarlist_id){
-                return 1;
+                $isEventAllowed =  1;
+                return $isEventAllowed;
             }
             //共有グループに含まれているユーザーの予定
             if(in_array($attendee->user_id, $user_ids)){
                 // 一般公開の予定
                 if($schedule->visibility_id == "1"){
-                    return 1;
+                    $isEventAllowed = 1;
                 }
-                // 予定あり表示の予定
+                // 限定公開：予定あり表示の予定
                 if($schedule->visibility_id == "2" && $schedule->public_setting_id == "2"){
-                    return 2;
+                    $isEventAllowed = 2;
                 }
-                // 限定公開の予定
+                // 限定公開：非公開の予定
                 if($schedule->visibility_id == "2" && $schedule->public_setting_id == "1"){
-                    return 0;
+                    $isEventAllowed = 0;
                 }
             }
         }
+
+        return $isEventAllowed;
     }
 
     /**
@@ -263,6 +267,11 @@ class ScheduleController extends Controller
             $event["start"] = $schedule->start_date->format('Y-m-d') . "T" . $schedule->start_date->format('H:i:s');
             $event["end"] = $schedule->end_date->format('Y-m-d') . "T" . $schedule->end_date->format('H:i:s');
         }
+        if(!$this->checkEditable($schedule, $setMyEvent)){
+            // 予定ありの場合
+            $event["id"] = 0;// クリックした際に詳細ポップアップを表示しない。
+            $event["editable"] = false;// ドラッグアンドドロップをさせない。
+        }
         return $event;
     }
 
@@ -274,7 +283,7 @@ class ScheduleController extends Controller
     private function getEventTitle($schedule, $setMyEvent){
         // 表示タイトル取得
         $title = $schedule->summary;
-        if(!$setMyEvent) {
+        if($setMyEvent) {// 0:公開、1:予定あり
             if ($schedule->visibility_id == "2" && $schedule->public_setting_id == "2") {
                 // 限定公開(予定あり)
                 $title = "予定あり";
@@ -699,5 +708,21 @@ class ScheduleController extends Controller
         $g = hexdec(substr($hexcolor, 3, 2 )) ;
         $b = hexdec(substr($hexcolor, 5, 2 )) ;
         return (((($r * 299)+($g * 587)+($b * 114))/1000) < 160) ? $white : $black ;
+    }
+
+    /**
+     * @param $schedule
+     * @param $setMyEvent
+     * @return string
+     */
+    private function checkEditable($schedule, $setMyEvent)
+    {
+        // 編集可否の取得
+        if ($setMyEvent) { // 0:公開、1:予定あり
+            if ($schedule->visibility_id == "2" && $schedule->public_setting_id == "2") {
+                return false;
+            }
+        }
+        return true;
     }
 }
