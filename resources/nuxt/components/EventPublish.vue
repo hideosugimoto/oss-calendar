@@ -84,8 +84,10 @@ export default {
       }
       // 限定公開の場合、公開設定を表示
       if (this.selected_visibility_id == '2') {
+        // 限定公開の場合
         this.isSettingView = true
       } else {
+        // 一般公開の場合
         this.selected_public_setting_id = '0'
         this.isSettingView = false
       }
@@ -93,8 +95,14 @@ export default {
     async changeIds(visibility_id, public_setting_id) {
       // 限定公開の場合、公開設定を表示
       if (visibility_id == '2') {
+        // 限定公開の場合
         this.isSettingView = true
+        if (public_setting_id == '0') {
+          // 限定公開だが公開設定が選択されていない場合、非公開にする。
+          this.selected_public_setting_id = '1' // 非公開
+        }
       } else {
+        // 一般公開の場合
         this.selected_public_setting_id = '0'
         this.isSettingView = false
       }
